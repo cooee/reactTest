@@ -3,6 +3,9 @@ const apiUrl = `https://api.telegram.org/bot${token}/sendMessage`;
 
 const chatId = "-4011378602";
 const text = "不用上班的程序员";
+
+const clientID = "fIJXLAYLBozRxXpC"
+
 import axios from "axios";
 
 export async function sendTelegramMessage(text: string) {
@@ -19,52 +22,34 @@ export async function sendTelegramMessage(text: string) {
     });
 }
 
-export async function access_token(cb: any) {
-  // axios.defaults.withCredentials = true
-
+export async function access_token(code: string, cb: any) {
   const http = axios.create({
     baseURL: "",
     headers: {
       'Content-Type': 'code'
     },
-    proxy:{
-      host:"lm.2048.net",
-      port:4978
-    }
   })
-  // // 添加请求拦截器
-  // http.interceptors.request.use(function (config) {
-  //   // 在发送请求之前做些什么
-  //   // 随便写个值 绕过if判段
-  //   if (config.method == 'get') {
-  //     config.data = true
-  //   }
-  //   config.headers['Content-Type'] = 'code'
-  //   return config;
-  // }, function (error) {
-  //   // 对请求错误做些什么
-  //   return Promise.reject(error);
-  // });
-
-  
-  const url2 =
-    "https://openplatform.gateapi.io/oauth/token";
+  // const url =
+  //   "http://localhost:4980/get-access-token";
+  const url =
+    "https://lm.2048.net:4980/get-access-token";
   http
-    .post(url2, {
-      'id': "1"
-    }, {
-      headers: { "Content-Type": "code", "User-Agent": "gateio/android" },
-    })
+    .post(url, {
+      'code': code,
+      'clientID': clientID
+    },)
     .then((response) => {
       console.log(response.data);
-      cb(response.data);
+      if (response.data.error && response.data.error != "") {
+        localStorage.setItem("gate_code","");
+      }
+      cb(0,response.data);
     })
     .catch((error) => {
       console.log(error);
-
-      cb(JSON.stringify(error));
+      localStorage.setItem("gate_code","");
+      cb(1,JSON.stringify(error));
     });
-  // axios.
 }
 
 
@@ -92,22 +77,29 @@ export async function auth2(cb: any) {
     return Promise.reject(error);
   });
 
+  const u = navigator.userAgent;
+
+  let isAndroid = u.indexOf('Android') > -1 || u.indexOf('Adr') > -1;   //判断是否是 android终端
+  let isIOS = !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/);     //判断是否是 iOS终端
+  console.log(u, isAndroid, isIOS);
+
+  let agent = isAndroid ? "gateio/android" : "gateio/ios";
 
   const url2 =
-    "https://lm.2048.net:4001/auth?name=https://lm.2048.net/test/index.html";
+    `https://lm.2048.net:4980/auth?name=https://lm.2048.net/test/index.html&agent=${agent}&clientID=${clientID}`;
   http
     .get(url2, {
-      headers: { "Content-Type": "code", "User-Agent": "gateio/android", "Origin": "*" },
+      headers: { "Content-Type": "code", "User-Agent": agent, "Origin": "*" },
     })
     .then((response) => {
       console.log(response.data);
-      cb(response.data.toString());
+      cb(0,response.data.toString());
       // sendTelegramMessage(response.data.toString());
     })
     .catch((error) => {
       console.log(error);
       // sendTelegramMessage(error.toString());
-      cb(JSON.stringify(error));
+      cb(1,JSON.stringify(error));
     });
   // axios.
 }
@@ -128,6 +120,8 @@ export function getQuerys(e: string) {
   }
   return t
 }
+
+
 
 
 
